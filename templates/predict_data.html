@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predict Data for Day</title>
+</head>
+<body>
+    <h2>Predict Data for Day</h2>
+    <form method="post" action="/predict_data">
+        <label for="selected_day">Select a day:</label>
+        <select id="selected_day" name="selected_day" required>
+            {% for day in days %}
+                <option value="{{ day }}">{{ day }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Predict</button>
+    </form>
+
+    {% if prediction is not none %}
+        <p>Prediction for {{ selected_day }}: {{ prediction }}</p>
+    {% endif %}
+</body>
+</html>

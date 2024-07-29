@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passengers at Specific Station</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+        p {
+            color: #555;
+            text-align: center;
+            font-size: 18px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+    <script>
+        // Add any JavaScript code if needed
+        document.addEventListener("DOMContentLoaded", function() {
+            // Add event listeners or additional JavaScript logic here
+            const backButton = document.getElementById('backButton');
+            backButton.addEventListener('click', function() {
+                window.location.href = '/';
+            });
+        });
+    </script>
+</head>
+<body>
+    <h2>Passengers at Specific Station</h2>
+    <p id="passengerInfo">Number of passengers at {{ station }}: {{ passengers_at_specific_station }}</p>
+
+    <button id="backButton">Back to Home</button>
+</body>
+</html>

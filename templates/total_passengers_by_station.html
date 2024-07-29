@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Total Passengers by Station</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f8f8f8;
+        }
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+        p {
+            color: #555;
+            text-align: center;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const backButton = document.getElementById('backButton');
+            backButton.addEventListener('click', function() {
+                window.location.href = '/';
+            });
+
+            const submitButton = document.getElementById('submitButton');
+            submitButton.addEventListener('click', function() {
+                const selectedStation = document.getElementById('stationDropdown').value;
+                window.location.href = `/total_passengers_by_station/${selectedStation}`;
+            });
+        });
+    </script>
+</head>
+<body>
+    <h2>Total Passengers by Station</h2>
+    
+    <label for="stationDropdown">Select a station:</label>
+    <select id="stationDropdown">
+        <option value="s1">S1</option>
+        <option value="s2">S2</option>
+        <option value="s3">S3</option>
+        <option value="s4">S4</option>
+        <option value="s5">S5</option>
+    </select>
+
+    <button id="submitButton">Submit</button>
+
+    <p id="result">Total number of passengers: {{ total_passengers }}</p>
+
+    <button id="backButton">Back to Home</button>
+</body>
+</html>

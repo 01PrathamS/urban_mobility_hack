@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commuter Data</title>
+    <p>    <a href="{{ url_for('total_passengers') }}">Check Total Passengers</a>    </p>
+    <p><a href="{{ url_for('total_passengers_by_station', station='YourStationNameHere') }}">Check Total Passengers by Station</a> </p>
+    <p><a href="{{ url_for('passengers_at_specific_station', station='YourStationNameHere') }}">Check Passengers at Specific Station</a></p>
+    <p><a href="{{ url_for('predict_data') }}">Predict Data for Day</a></p>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        form {
+            max-width: 400px;
+            margin: auto;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h2>Commuter Data</h2>
+    <form id="commuterForm">
+        <label for="source_station">Source Station:</label>
+        <input type="text" id="source_station" name="source_station" required>
+
+        <label for="destination_station">Destination Station:</label>
+        <input type="text" id="destination_station" name="destination_station" required>
+
+        <button type="button" onclick="updateDatabase()">Submit</button>
+    </form>
+
+    <script>
+        function updateDatabase() {
+            var form = document.getElementById('commuterForm');
+            var formData = new FormData(form);
+
+            fetch('/update_database', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                form.reset();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
