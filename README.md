@@ -1,4 +1,4 @@
-[![Hack Transport Video](/static/images/hack_transport.mp4)](/static/images/hack_transport.mp4)
+[![Hack Transport Video](https://img.youtube.com/vi/LaPmCP6y410/maxresdefault.jpg)](https://www.youtube.com/watch?v=LaPmCP6y410)
 
 # Why?
 
