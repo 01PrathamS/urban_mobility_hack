@@ -33,14 +33,4 @@ This project provides a web-based application to track bus movements, manage pas
 - **Backend**: Python with Flask
 - **Database**: MySQL
 - **Frontend**: HTML, CSS, JavaScript (jQuery and Chart.js)
-- **Static Files**: Images for maps
-
-## Setup Instructions
-
-### Tools and Frameworks
-
-- Python 3.x
-- MySQL
-- Flask
-- jQuery
-- Chart.js
+- **Maps**: Maps APIs.
