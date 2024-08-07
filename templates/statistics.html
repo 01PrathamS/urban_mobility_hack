@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Statistics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #0056b3;
+            color: white;
+            padding: 20px;
+            height: 100vh;
+            position: fixed;
+        }
+        .sidebar h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+        .sidebar a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px;
+            margin: 10px 0;
+            margin-top: 50px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .sidebar a:hover {
+            background-color: #053e6da8;
+        }
+        .content {
+            margin-left: 220px;
+            padding: 20px;
+            width: calc(100% - 240px);
+        }
+        .container {
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Navigation</h2>
+        <a href="/">Ticket Machine</a>
+        <a href="/statistics">Statistics</a>
+        <a href="/maps">Track Bus</a>
+        <a href="/reset" style="background-color: #d31515;">Reset</a>
+        <!-- Add more links as needed -->
+    </div>
+    <div class="content">
+        <div class="container">
+            <h1>Station-wise Passenger Count</h1>
+            <canvas id="passengerChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/get_station_passenger_counts')
+                .then(response => response.json())
+                .then(data => {
+                    const sourceStations = data.source.map(item => item.station);
+                    const destinationStations = data.destination.map(item => item.station);
+                    
+                    // Get unique stations
+                    const allStations = [...new Set([...sourceStations, ...destinationStations])];
+
+                    const sourceCounts = allStations.map(station => {
+                        const item = data.source.find(i => i.station === station);
+                        return item ? item.count : 0;
+                    });
+
+                    const destinationCounts = allStations.map(station => {
+                        const item = data.destination.find(i => i.station === station);
+                        return item ? item.count : 0;
+                    });
+
+                    const ctx = document.getElementById('passengerChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: allStations,
+                            datasets: [
+                                {
+                                    label: 'Passengers OnBoard',
+                                    data: sourceCounts,
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    fill: false,
+                                    tension: 0.1
+                                },
+                                {
+                                    label: 'Disembarking passengers',
+                                    data: destinationCounts,
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    fill: false,
+                                    tension: 0.1
+                                }
+                            ]
+                        },
+                        options: {
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Station Names'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Passenger Count'
+                                    },
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                });
+        });
+    </script>
+</body>
+</html>

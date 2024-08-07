@@ -1,185 +1,153 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 import mysql.connector
-import random
-
-random.seed(42)
-
-days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-map_data = {}
-
-for day in days:
-    lower_bound = 8 
-    upper_bound = 12 
-    map_data[day] = [
-        [random.randint(min(lower_bound, upper_bound), max(lower_bound, upper_bound)) for _ in range(30)],
-        [random.randint(lower_bound, upper_bound) for _ in range(30)]
-    ]
-
-def predict_data_for_day(day):
-    return round(sum(map_data[day][1]) / len(map_data[day][1]))
+from secret import db_config
 
 app = Flask(__name__)
 
-# MySQL database configuration
-db_config = {}
+# Connect to MySQL
+def connect_db():
+    return mysql.connector.connect(**db_config)
 
-# Connect to the MySQL server
-connection = mysql.connector.connect(**db_config)
-
-# Create a cursor object to execute SQL queries
-cursor = connection.cursor()
-
-# Define the table structure
-create_table_query = """
-CREATE TABLE IF NOT EXISTS passengers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    source_station VARCHAR(50) NOT NULL,
-    destination_station VARCHAR(50) NOT NULL,
-    passenger_count INT NOT NULL,
-    UNIQUE KEY unique_stations (source_station, destination_station)
-)
-"""
-
-cursor.execute(create_table_query)
-connection.commit()
-
-# Close the cursor (Note: Connection remains open for the duration of the application)
-cursor.close()
+# Fetch stations
+stations = ["s1", "s2", "s3", "s4", "s5"]
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', stations=stations)
 
-@app.route('/update_database', methods=['POST'])
-def update_database():
-    try:
-        source_station = request.form['source_station']
-        destination_station = request.form['destination_station']
-
-        # Increment passenger count in the database
-        query = """
-        INSERT INTO passengers (source_station, destination_station, passenger_count) 
-        VALUES (%s, %s, 1) 
-        ON DUPLICATE KEY UPDATE passenger_count = passenger_count + 1
-        """
-        values = (source_station, destination_station)
-
-        cursor = connection.cursor()
-        cursor.execute(query, values)
-        connection.commit()
-
-        return jsonify({'status': 'success', 'message': 'Passenger count updated successfully'})
-
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/total_passengers')
-def total_passengers():
-    try:
-        # Query to get the total number of passengers
-        total_passengers_query = "SELECT SUM(passenger_count) FROM passengers"
-        cursor = connection.cursor()
-        cursor.execute(total_passengers_query)
-        total_passengers = cursor.fetchone()[0]
-
-        return render_template('total_passengers.html', total_passengers=total_passengers)
-
-    except Exception as e:
-        return render_template('error.html', error_message=str(e))
+@app.route('/move_bus', methods=['POST'])
+def move_bus():
+    current_station = request.json['current_station']
+    next_station = stations[(stations.index(current_station) + 1) % len(stations)]
     
-@app.route('/total_passengers_by_station/<station>')
-def total_passengers_by_station(station):
-    try:
-        # Query to get the total number of passengers for a specific destination station
-        total_passengers_query = """
-        SELECT SUM(passenger_count) 
-        FROM passengers 
-        WHERE destination_station = %s
-        """
-        cursor = connection.cursor()
-        cursor.execute(total_passengers_query, (station,))
-        total_passengers = cursor.fetchone()[0]
-
-        return render_template('total_passengers_by_station.html', station=station, total_passengers=total_passengers)
-
-    except Exception as e:
-        return render_template('error.html', error_message=str(e))
-
-
-# @app.route('/passengers_at_specific_station/<station>')
-# def passengers_at_specific_station(station):
-#     try:
-#         # Query to get the total number of passengers
-#         total_passengers_query = "SELECT SUM(passenger_count) FROM passengers"
-#         cursor = connection.cursor()
-#         cursor.execute(total_passengers_query)
-#         total_passengers = cursor.fetchone()[0]
-
-#         # Query to get the total number of passengers for a specific destination station
-#         total_passengers_by_station_query = """
-#         SELECT SUM(passenger_count) 
-#         FROM passengers 
-#         WHERE destination_station = %s
-#         """
-#         cursor.execute(total_passengers_by_station_query, (station,))
-#         total_passengers_by_station = cursor.fetchone()[0]
-
-#         # Calculate the difference
-#         passengers_at_specific_station = total_passengers - total_passengers_by_station
-
-#         return render_template('passengers_at_specific_station.html', station=station, passengers_at_specific_station=passengers_at_specific_station)
-
-#     except Exception as e:
-#         return render_template('error.html', error_message=str(e))
+    conn = connect_db()
+    cursor = conn.cursor()
     
-@app.route('/passengers_at_specific_station/<station>')
-def passengers_at_specific_station(station):
-    try:
-        # Query to get the total number of passengers
-        total_passengers_query = "SELECT SUM(passenger_count) FROM passengers"
-        cursor = connection.cursor()
-        cursor.execute(total_passengers_query)
-        total_passengers = cursor.fetchone()[0]
-
-        # Query to get the total number of passengers for a specific destination station
-        total_passengers_by_station_query = """
-        SELECT SUM(passenger_count) 
-        FROM passengers 
-        WHERE destination_station = %s
-        """
-        cursor.execute(total_passengers_by_station_query, ('s2',))
-        total_passengers_by_station_s2 = cursor.fetchone()[0]
+    # Update total passenger count
+    cursor.execute("SELECT passenger_count FROM passengers WHERE destination_station=%s", (next_station,))
+    results = cursor.fetchall()
+    total_passengers_dropping = sum(row[0] for row in results)
     
-        cursor.execute(total_passengers_by_station_query, ('s3',))
-        total_passengers_by_station_s3 = cursor.fetchone()[0]
+    cursor.execute("UPDATE total_passenger_count SET count = count - %s WHERE id = 1", (total_passengers_dropping,))
     
-        cursor.execute(total_passengers_by_station_query, ('s4',))
-        total_passengers_by_station_s4 = cursor.fetchone()[0]
+    # Remove passengers who have reached their destination
+    # cursor.execute("DELETE FROM passengers WHERE destination_station=%s", (current_station,))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify(next_station=next_station)
 
-        # Calculate the difference
-        if station == 's2':
-            passengers_at_specific_station = total_passengers - total_passengers_by_station_s2
-        if station == 's3':
-            passengers_at_specific_station = total_passengers - total_passengers_by_station_s3 - total_passengers_by_station_s2 
-        if station == 's4':
-            passengers_at_specific_station = total_passengers - total_passengers_by_station_s4 - total_passengers_by_station_s3 - total_passengers_by_station_s2
+@app.route('/add_passenger', methods=['POST'])
+def add_passenger():
+    data = request.json
+    source = data.get('source')
+    destination = data.get('destination')
+    
+    if not source or not destination:
+        return jsonify(success=False, message="Invalid input")
 
-        return render_template('passengers_at_specific_station.html', station=station, passengers_at_specific_station=passengers_at_specific_station)
+    conn = connect_db()
+    cursor = conn.cursor()
 
-    except Exception as e:
-        return render_template('error.html', error_message=str(e))
+    # Check if this route already exists
+    cursor.execute("SELECT * FROM passengers WHERE source_station=%s AND destination_station=%s", (source, destination))
+    result = cursor.fetchone()
+
+    if result:
+        # Route exists, increment passenger count
+        cursor.execute("UPDATE passengers SET passenger_count = passenger_count + 1 WHERE source_station=%s AND destination_station=%s", (source, destination))
+    else:
+        # Route does not exist, insert new record
+        cursor.execute("INSERT INTO passengers (source_station, destination_station, passenger_count, status) VALUES (%s, %s, %s, %s)", (source, destination, 1, 0))
+
+    # Update total passenger count
+    cursor.execute("UPDATE total_passenger_count SET count = count + 1 WHERE id = 1")
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify(success=True)
+
+@app.route('/get_total_passenger_count', methods=['GET'])
+def get_total_passenger_count():
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT count FROM total_passenger_count WHERE id = 1")
+    result = cursor.fetchone()
+
+    total_count = result[0] if result else 0
+    
+    cursor.close()
+    conn.close()
+    
+    return jsonify(total_passenger_count=total_count)
+
+# when restart the server, the total passenger count will be reset to 0 and all passengers will be removed
+@app.route('/reset', methods=['POST', 'GET'])
+def reset():
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("UPDATE total_passenger_count SET count = 0 WHERE id = 1")
+    cursor.execute("DELETE FROM passengers")
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return redirect('/')
     
 
-@app.route('/predict_data', methods=['GET', 'POST'])
-def predict_data():
-    if request.method == 'POST':
-        selected_day = request.form['selected_day']
-        prediction = predict_data_for_day(selected_day)
-        return jsonify({'prediction': prediction})
+## return details of all passengers # select * from passengers 
+@app.route('/get_passenger_details', methods=['GET'])
+def get_passenger_details():
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM passengers")
+    results = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return jsonify(passenger_details=results)
 
-    return render_template('predict_data.html', days=days)
 
+@app.route('/get_station_passenger_counts', methods=['GET'])
+def get_station_passenger_counts():
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT source_station, SUM(passenger_count) FROM passengers GROUP BY source_station")
+    source_results = cursor.fetchall()
+
+    cursor.execute("SELECT destination_station, SUM(passenger_count) FROM passengers GROUP BY destination_station")
+    destination_results = cursor.fetchall()
+
+    source_data = [{'station': row[0], 'count': row[1]} for row in source_results]
+    destination_data = [{'station': row[0], 'count': row[1]} for row in destination_results]
+
+    data = {
+        'source': source_data,
+        'destination': destination_data
+    }
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(data)
+
+@app.route('/statistics') 
+def staistics():
+    return render_template('statistics.html')
+
+@app.route('/maps')
+def maps():
+    return render_template('maps.html')
 
 
 if __name__ == '__main__':
